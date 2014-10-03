@@ -1,3 +1,5 @@
+###   https://github.com/zbanbosuiyue/Python_learning/  ###
+
 import csv
 import math
 import random
@@ -31,10 +33,12 @@ def read_weight(filename):
 		reader=csv.reader(csvin, delimiter=',')
 		return list(reader)
 		
+		
 # If old_work=1, read weight.csv
 # If w_sign=1, write to weight.csv	
 old_work=0
 w_sign=0
+print ('w_sign=',w_sign)
 
 # Read crabs.csv
 data=readcsv('crabs.csv')
@@ -50,9 +54,9 @@ i=0
 targets = data['sex']
 for index,item in enumerate(targets):
 	if item == 'M':
-		targets[index] = 1
+		targets[index] = 0.5
 	else:
-		targets[index] = 0
+		targets[index] = -0.5
 
 new_targets = []		
 for i in range(len(targets)):
@@ -63,8 +67,8 @@ for i in range(len(targets)):
 inputs = []
 for i in range(len(FL)):
 	inputs.append([])
-	inputs[i].append(FL[i])
-	#inputs[i].append(RW[i])
+	#inputs[i].append(FL[i])
+	inputs[i].append(RW[i])
 	#inputs[i].append(CL[i])
 	inputs[i].append(CW[i])
 	#inputs[i].append(BD[i])
@@ -77,7 +81,7 @@ for i in range(len(new_targets)-1):
 	new_data[i].append(new_targets[i])
 	
 ran_data=[]
-	for i in range(len(new_data)):
+for i in range(len(new_data)):
 		ran_data.append(new_data[random.randint(0,150)])
 
 # Stochastic Data
@@ -136,7 +140,7 @@ class NeuronNetwork:
 					data=read_weight('weight.csv')
 					self.w_in_h[i][j]=float(data[i][j])
 				else:
-					self.w_in_h[i][j] = rand(-1,1)
+					self.w_in_h[i][j] = rand(-0.1,0.1)
 
 		for i in range(self.num_h):
 			for j in range(self.num_out):
@@ -144,14 +148,13 @@ class NeuronNetwork:
 					data=read_weight('weight.csv')
 					self.w_h_out[i][j]=float(data[i+3][j])
 				else:
-					self.w_h_out[i][j] = rand(-1,1)
+					self.w_h_out[i][j] = rand(-0.1,0.1)
 		
-		print self.w_h_out
 		
 		
 	#### Calculate output of each nodes 			####
 	#### Sequence is like input-->hidden-->output 	####
-	def update(self, input):
+	def feedForward(self, input):
 		### Number of inputs should be equal to nodes of input layer
 		if len(input) != self.num_in - 1:
 			raise ValueError('Number of inputs should be equal to nodes of input layer')
@@ -217,24 +220,25 @@ class NeuronNetwork:
 
 	####   Train  		####
 	#### N is learning rate ####
-	def train(self, input,iterations=100000, N=0.0001):
+	def train(self, input,iterations=1000, N=0.0001):
 		for i in range(iterations):
+			w_sign=0
 			error = 0.0
 			for j in input:
 				inputs = j[0]
 				targets = j[1]
-				self.update(inputs)
+				self.feedForward(inputs)
 				error = error + self.backPropagation(targets, N)
 				
 			if i % 100 == 0:
 				print ('error= %f' %error)
 				
 			# if error small than a threshold just stop and save weight to weight.csv file	
-			if error<=24:
+			if error<=4:
 				w_sign=1
 				break
-				
 		# Write to weight.csv, wait for next time run.
+		
 		if w_sign==1:
 			m=0
 			target=open('weight.csv','wb')
@@ -244,23 +248,37 @@ class NeuronNetwork:
 				
 			for i in self.w_h_out:
 				wr.writerow(i)
-			print self.w_h_out
 		
 		
 	# Test
 	def test(self, data):
+		correct_n=0.0
+		wrong_n=0.0
 		for i in data:
-			print(i[0], '->', self.update(i[0]),'target-->',i[1])
+		
+			test_target=''
+			if self.feedForward(i[0])[0]>0:
+				test_target='Male'
+			else:
+				test_target='Female'
+			if i[1][0]==0.5:
+				sex='Male'
+			else:
+				sex='Female'
+			print(i[0], '->', test_target,'target-->',sex)
+			if test_target==sex:
+				correct_n+=1
+			else:
+				wrong_n+=1
+		accuracy='{percent:.2%}'.format(percent=correct_n/(correct_n+wrong_n))
+		print('Correct= %i. Wrong= %i' %(correct_n,wrong_n))
+		print('Accuracy= %s' %(accuracy))
+		
 		
 def run():
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
 	n = NeuronNetwork(2, 5, 1)
 	n.train(ran_data[0:199])
-	 
-	#n.test(ran_data[101:199])
+	n.test(new_data[101:200])
 
 if __name__ == '__main__':
 	run()
